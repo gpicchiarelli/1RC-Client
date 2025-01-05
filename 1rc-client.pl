@@ -1,4 +1,4 @@
-# client_irc.pl - Entry Point
+# 1rc-client.pl - Entry Point
 use strict;
 use warnings;
 use lib './lib';
