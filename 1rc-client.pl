@@ -11,7 +11,7 @@ my $config = IRC::Config::load_config();
 my $client = IRC::Core->new(
     server   => $config->{server} || 'irc.libera.chat',
     port     => $config->{port} || 6667,
-    nick     => $config->{nick} || 'MyIRCBot',
+    nick     => $config->{nick} || '1rc-client',
     channel  => $config->{channel} || '#test_channel'
 );
 
