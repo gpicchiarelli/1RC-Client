@@ -16,4 +16,4 @@ my $client = IRC::Core->new(
 );
 
 $client->connect();
-IRC::UI::start_ui($client);
+IRC::UI::run();

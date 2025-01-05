@@ -1,81 +1,58 @@
 package IRC::UI;
+use Term::ReadLine;
 use Term::ANSIColor;
 use warnings;
 use strict;
 
 # Dichiarazione globale delle finestre
-our $input_line;
+our $term;
+our $input;
 
-sub refresh_screen {
-    system("clear");
-    print colored($input_line, 'bold green');
-    print "\n" . ('-' x 80) . "\n";
-    print colored('Command: ', 'bold blue');
-}
+sub run {
+    # Crea un oggetto Term::ReadLine
+    $term = Term::ReadLine->new('1RC-Client');
+    my $prompt = colored("1RC-Client>:", 'bold green');
+    my $OUT = $term->OUT || \*STDOUT;
 
-sub get_input {
-    # Cancella la linea di input precedente
-    print colored(' ' x 70, 'bold blue') . "\rCommand: ";
-    
-    # Ottieni la stringa di input
-    my $input = <STDIN>;
-    chomp $input;
+    print colored("\n=== 1RC-Client ===", 'bold');
+    print colored("\n=== https://github.com/gpicchiarelli/1RC-Client ===\n\n", 'bold');
+        
+    while (defined (my $input = $term->readline($prompt))) {
+        chomp $input;
+        $input =~ s/^\s+|\s+$//g;  # Rimuove spazi iniziali e finali
+
+        # Gestione dei comandi
+        if ($input eq 'help') {
+            print_help($OUT);
+        }
+        elsif ($input eq 'exit' || $input eq 'quit') {
+            print colored("\nUscita dalla CLI. Arrivederci!\n", 'bold green');
+            last;
+        }
+        elsif ($input eq 'connect-server') {
+            print colored("\nConnect to $input\n", 'bold magenta');
+            
+        }else {
+            print colored("Comando non riconosciuto. Digita 'help' per la lista dei comandi.\n", 'bold red');
+        }
+        # Aggiunge l'input alla cronologia
+        $term->addhistory($input) if $input;
+    }
+
+    # Aggiungi la linea di input alla cronologia
+    $term->addhistory($input) if $input =~ /\S/;
     
     # Ritorna l'input dell'utente
     return $input;
 }
 
-sub start_ui {
-    my ($client) = @_;
-
-    $input_line = '';
-
-    refresh_screen();  # Aggiorna lo schermo
-
-    while (1) {
-        my $input = get_input();  # Ottieni l'input dall'utente
-        process_command($client, $input);  # Elabora il comando
-    }
-}
-
-sub process_command {
-    my ($client, $input) = @_;
-    if ($input =~ m{^/(\w+)(?:\s+(.*))?}) {
-        my ($cmd, $args) = ($1, $2);
-        if ($cmd eq 'join') {
-            $client->{sock}->send("JOIN $args\r\n");
-        } elsif ($cmd eq 'part') {
-            $client->{sock}->send("PART $args\r\n");
-        } elsif ($cmd eq 'msg') {
-            my ($target, $message) = split /\s+/, $args, 2;
-            $client->{sock}->send("PRIVMSG $target :$message\r\n");
-        } elsif ($cmd eq 'nick') {
-            $client->{sock}->send("NICK $args\r\n");
-        } elsif ($cmd eq 'topic') {
-            $client->{sock}->send("TOPIC $args\r\n");
-        } elsif ($cmd eq 'kick') {
-            my ($channel, $user) = split /\s+/, $args, 2;
-            $client->{sock}->send("KICK $channel $user\r\n");
-        } elsif ($cmd eq 'ban') {
-            my ($channel, $user) = split /\s+/, $args, 2;
-            $client->{sock}->send("MODE $channel +b $user\r\n");
-        } elsif ($cmd eq 'list') {
-            $client->{sock}->send("LIST\r\n");
-        } elsif ($cmd eq 'whois') {
-            $client->{sock}->send("WHOIS $args\r\n");
-        } elsif ($cmd eq 'invite') {
-            my ($user, $channel) = split /\s+/, $args, 2;
-            $client->{sock}->send("INVITE $user $channel\r\n");
-        } elsif ($cmd eq 'quit') {
-            $client->{sock}->send("QUIT :$args\r\n");
-            system("clear");
-            exit;
-        }
-    } else {
-        $client->{sock}->send("PRIVMSG $client->{channel} :$input\r\n");
-    }
-    $input_line .= "\n$input";  # Aggiungi l'input alla linea di comando
-    refresh_screen();
+# Funzione per stampare l'help
+sub print_help {
+    my ($OUT) = @_;
+    print colored("\n=== Comandi disponibili ===\n", 'bold cyan');
+    print colored("  help                      ", 'red black'), "Mostra questo messaggio di aiuto.\n";
+    print colored("  exit | quit               ", 'red black'), "Esce dalla CLI.\n";
+    print colored("  connect                 ", 'black black'), "Esegue la connessione al server.\n";
 }
 
 1;
