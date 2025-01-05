@@ -38,10 +38,10 @@ sub run {
         # Aggiunge l'input alla cronologia
         $term->addhistory($input) if $input;
     }
-
-    # Aggiungi la linea di input alla cronologia
-    $term->addhistory($input) if $input =~ /\S/;
-    
+    if (defined($input)){
+        # Aggiungi la linea di input alla cronologia
+        $term->addhistory($input) if $input =~ /\S/;
+    }
     # Ritorna l'input dell'utente
     return $input;
 }
