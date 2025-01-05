@@ -1,48 +1,41 @@
-# lib/IRC/UI.pm
 package IRC::UI;
-use Curses;
-use IRC::Config;
+use Term::ANSIColor;
+use warnings;
+use strict;
 
-my ($win, $input_win, $sidebar_win);
+# Dichiarazione globale delle finestre
+our $input_line;
 
-sub start_ui {
-    my ($client) = @_;
-    initscr();
-    start_color();
-    cbreak();
-    noecho();
-    keypad(stdscr, 1);
-    curs_set(1);
-
-    # Setup windows
-    my $height = LINES - 3;
-    my $width = COLS - 30;
-    $win = newwin($height, $width, 0, 0);
-    $input_win = newwin(3, $width, $height, 0);
-    $sidebar_win = newwin(LINES, 30, 0, $width);
-
-    scrollok($win, 1);
-    box($input_win, 0, 0);
-    box($sidebar_win, 0, 0);
-
-    refresh_windows();
-
-    while (1) {
-        my $input = get_input();
-        process_command($client, $input);
-    }
-}
-
-sub refresh_windows {
-    wrefresh($win);
-    wrefresh($input_win);
-    wrefresh($sidebar_win);
+sub refresh_screen {
+    system("clear");
+    print colored($input_line, 'bold green');
+    print "\n" . ('-' x 80) . "\n";
+    print colored('Command: ', 'bold blue');
 }
 
 sub get_input {
-    mvwprintw($input_win, 1, 1, " ");
-    wrefresh($input_win);
-    mvwgetstr($input_win, 1, 1);
+    # Cancella la linea di input precedente
+    print colored(' ' x 70, 'bold blue') . "\rCommand: ";
+    
+    # Ottieni la stringa di input
+    my $input = <STDIN>;
+    chomp $input;
+    
+    # Ritorna l'input dell'utente
+    return $input;
+}
+
+sub start_ui {
+    my ($client) = @_;
+
+    $input_line = '';
+
+    refresh_screen();  # Aggiorna lo schermo
+
+    while (1) {
+        my $input = get_input();  # Ottieni l'input dall'utente
+        process_command($client, $input);  # Elabora il comando
+    }
 }
 
 sub process_command {
@@ -75,13 +68,14 @@ sub process_command {
             $client->{sock}->send("INVITE $user $channel\r\n");
         } elsif ($cmd eq 'quit') {
             $client->{sock}->send("QUIT :$args\r\n");
-            endwin();
+            system("clear");
             exit;
         }
     } else {
         $client->{sock}->send("PRIVMSG $client->{channel} :$input\r\n");
     }
-    refresh_windows();
+    $input_line .= "\n$input";  # Aggiungi l'input alla linea di comando
+    refresh_screen();
 }
 
 1;
